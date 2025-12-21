@@ -214,6 +214,98 @@ SMARTCALL_MODE=stub npm run dev
 - ジョブは即座にメモリ内で処理されます
 - 本番と同じAPIで動作確認できます
 
+## Docker でのテスト実行
+
+Playwrightを使ったRPA処理をDockerでテストできます。
+
+### 1. テスト用Dockerイメージのビルド
+
+```bash
+docker compose -f docker/docker-compose.test.yml build
+```
+
+### 2. テスト実行
+
+```bash
+# Playwrightテストを実行
+docker compose -f docker/docker-compose.test.yml run --rm test
+
+# スクリーンショットは ./screenshots/ に保存されます
+ls screenshots/
+```
+
+### 3. カスタムテストの実行
+
+```bash
+# 別のテストスクリプトを実行
+docker compose -f docker/docker-compose.test.yml run --rm test node your-test.js
+```
+
+### Docker設定ファイル
+
+| ファイル | 用途 |
+|----------|------|
+| `docker/Dockerfile.test` | テスト用イメージ（Playwright 1.57.0） |
+| `docker/Dockerfile.rpa` | 本番RPA用イメージ |
+| `docker/docker-compose.test.yml` | テスト実行用Compose |
+
+### 環境変数
+
+テスト時に利用可能な環境変数:
+
+| 変数名 | 説明 | デフォルト |
+|--------|------|------------|
+| `SMARTCALL_MODE` | 動作モード | `stub` |
+| `ENABLE_SCREENSHOT` | スクリーンショット有効化 | `false` |
+| `SCREENSHOT_DIR` | スクリーンショット保存先 | `/app/screenshots` |
+
+### サンプルテストコード
+
+`test-worker.js` を参考にしてください:
+
+```javascript
+import { BrowserManager, ScreenshotManager, BasePage, createRpaLogger } from './dist/index.js';
+
+// ページオブジェクト定義
+class LoginPage extends BasePage {
+  async login(username, password) {
+    await this.fill('#username', username);
+    await this.fill('#password', password);
+    await this.click('button[type="submit"]');
+    await this.page.waitForURL(/\/dashboard/, { timeout: 15000 });
+  }
+}
+
+// テスト実行
+async function test() {
+  const logger = createRpaLogger({ jobId: 'test', queueName: 'test' });
+  const browser = new BrowserManager({ headless: true });
+  const screenshot = new ScreenshotManager('test', {
+    directory: '/app/screenshots',
+    enabled: true,
+  });
+
+  try {
+    const { page } = await browser.launch();
+
+    await page.goto('https://example.com/login');
+    await screenshot.captureStep(page, '01-login-page');
+
+    const loginPage = new LoginPage(page);
+    await loginPage.login('user', 'password');
+    await screenshot.captureStep(page, '02-after-login');
+
+    console.log('✅ Test passed');
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+  } finally {
+    await browser.close();
+  }
+}
+
+test();
+```
+
 ## 本番環境
 
 本番環境では以下の環境変数が自動設定されます:
