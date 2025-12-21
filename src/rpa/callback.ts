@@ -13,28 +13,67 @@ export interface CallbackOptions {
   retryDelay?: number;
 }
 
+/**
+ * 予約操作結果の型（API仕様準拠）
+ */
+export interface ReservationResult {
+  /** SmartCall側の予約ID */
+  reservation_id: string;
+  /** 操作種別: create / cancel */
+  operation: 'create' | 'cancel';
+  /** 結果: success / conflict / failed */
+  status: 'success' | 'conflict' | 'failed';
+  /** 予約システム側の予約ID（成功時） */
+  external_reservation_id?: string;
+  /** エラーコード（失敗時） */
+  error_code?: string;
+  /** エラーメッセージ（失敗時） */
+  error_message?: string;
+}
+
+/**
+ * 空き枠情報の型（API仕様準拠）
+ */
+export interface AvailableSlot {
+  /** 日付（YYYY-MM-DD） */
+  date: string;
+  /** 時刻（HH:MM） */
+  time: string;
+  /** 所要時間（分） */
+  duration_min: number;
+  /** 空き枠数 */
+  stock: number;
+  /** リソース名（担当者名など） */
+  resource_name?: string;
+}
+
+/**
+ * エラー情報の型（API仕様準拠）
+ */
+export interface CallbackError {
+  /** エラーコード */
+  code: string;
+  /** エラーメッセージ */
+  message: string;
+}
+
+/**
+ * コールバック結果の型（API仕様準拠）
+ */
 export interface CallbackResult {
+  /** 対応するジョブID */
   job_id: string;
+  /** 店舗ID */
   external_shop_id: string;
-  synced_at: string;
-  reservation_results?: Array<{
-    reservation_id: string;
-    operation: 'create' | 'cancel';
-    result: {
-      status: 'success' | 'conflict' | 'failed';
-      external_reservation_id?: string;
-      error_code?: string | null;
-      error_message?: string | null;
-    };
-  }>;
-  reservations?: unknown[];
-  available_slots?: Array<{
-    date: string;
-    time: string;
-    stock: number;
-    duration_min: number;
-    resource_name?: string;
-  }>;
+  /** ジョブ全体のステータス: success / partial_success / failed */
+  status: 'success' | 'partial_success' | 'failed';
+  /** 予約操作結果リスト */
+  reservation_results?: ReservationResult[];
+  /** 空き枠情報 */
+  available_slots?: AvailableSlot[];
+  /** エラー情報 */
+  error?: CallbackError;
+  /** その他のカスタムフィールド */
   [key: string]: unknown;
 }
 
@@ -51,6 +90,14 @@ export async function sendCallback(
   options: CallbackOptions = {}
 ): Promise<void> {
   const { timeout = 30000, retries = 3, retryDelay = 1000 } = options;
+  const callbackId = `cb-${Date.now()}`;
+  const startTime = Date.now();
+
+  // コールバックリクエストログ
+  console.log(`[SmartCall SDK] [${callbackId}] === CALLBACK REQUEST ===`);
+  console.log(`[SmartCall SDK] [${callbackId}] URL: ${callbackUrl}`);
+  console.log(`[SmartCall SDK] [${callbackId}] JobID: ${result.job_id}`);
+  console.log(`[SmartCall SDK] [${callbackId}] Body: ${JSON.stringify(result)}`);
 
   let lastError: Error | null = null;
 
@@ -70,16 +117,34 @@ export async function sendCallback(
 
       clearTimeout(timeoutId);
 
+      // レスポンスボディを取得
+      let responseBody: string;
+      try {
+        responseBody = await response.text();
+      } catch {
+        responseBody = '[Unable to read response body]';
+      }
+
+      const duration = Date.now() - startTime;
+
       if (!response.ok) {
+        console.log(`[SmartCall SDK] [${callbackId}] === CALLBACK RESPONSE (ERROR) ===`);
+        console.log(`[SmartCall SDK] [${callbackId}] Status: ${response.status} ${response.statusText}`);
+        console.log(`[SmartCall SDK] [${callbackId}] Body: ${responseBody}`);
+        console.log(`[SmartCall SDK] [${callbackId}] Duration: ${duration}ms`);
         throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
       }
 
-      console.log(`[SmartCall SDK] Callback sent successfully: ${result.job_id}`);
+      // 成功ログ
+      console.log(`[SmartCall SDK] [${callbackId}] === CALLBACK RESPONSE (SUCCESS) ===`);
+      console.log(`[SmartCall SDK] [${callbackId}] Status: ${response.status}`);
+      console.log(`[SmartCall SDK] [${callbackId}] Body: ${responseBody}`);
+      console.log(`[SmartCall SDK] [${callbackId}] Duration: ${duration}ms`);
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(
-        `[SmartCall SDK] Callback attempt ${attempt + 1}/${retries + 1} failed:`,
+        `[SmartCall SDK] [${callbackId}] Callback attempt ${attempt + 1}/${retries + 1} failed:`,
         lastError.message
       );
 
@@ -89,24 +154,30 @@ export async function sendCallback(
     }
   }
 
-  console.error('[SmartCall SDK] Callback failed after all retries:', lastError?.message);
+  const duration = Date.now() - startTime;
+  console.error(`[SmartCall SDK] [${callbackId}] Callback failed after all retries (${duration}ms):`, lastError?.message);
   throw lastError;
 }
 
 /**
  * コールバック結果を構築するヘルパー
+ *
+ * @param jobId ジョブID
+ * @param externalShopId 店舗ID
+ * @param status ジョブ全体のステータス
+ * @param data 追加データ
  */
 export function buildCallbackResult(
   jobId: string,
   externalShopId: string,
-  data: Partial<Omit<CallbackResult, 'job_id' | 'external_shop_id' | 'synced_at'>> = {}
+  status: 'success' | 'partial_success' | 'failed',
+  data: Partial<Omit<CallbackResult, 'job_id' | 'external_shop_id' | 'status'>> = {}
 ): CallbackResult {
   return {
     job_id: jobId,
     external_shop_id: externalShopId,
-    synced_at: new Date().toISOString(),
+    status,
     reservation_results: [],
-    reservations: [],
     available_slots: [],
     ...data,
   };

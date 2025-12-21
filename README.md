@@ -2,6 +2,10 @@
 
 SmartCall RPA API開発者向けのRedis/BullMQ/Playwrightユーティリティライブラリです。
 
+## ドキュメント
+
+- [API仕様書](docs/API_SPEC.md) - sync-cycle / callback インターフェース仕様
+
 ## 特徴
 
 - **環境変数でモード切り替え**: ローカル開発時はスタブモード、本番はRedis接続
@@ -123,7 +127,7 @@ createRpaJob<MySyncData>('my-sync', async (ctx) => {
   const results = []; // 処理結果
 
   // コールバック送信
-  await sendCallback(buildResult({
+  await sendCallback(buildResult('success', {
     reservation_results: results,
     available_slots: slots.map(s => ({
       date: '2025-01-15',

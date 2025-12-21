@@ -1,0 +1,16 @@
+# SmartCall RPA SDK - テスト用Docker Compose
+# Playwrightを使用したワーカーテスト
+
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+    environment:
+      - SMARTCALL_MODE=stub
+      - NODE_ENV=development
+    volumes:
+      # スクリーンショット出力先
+      - ../screenshots:/app/screenshots
+    # テストスクリプトを実行
+    command: node test-worker.js

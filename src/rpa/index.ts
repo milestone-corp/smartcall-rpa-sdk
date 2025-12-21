@@ -24,7 +24,15 @@
 export { createRpaJob, type RpaJobContext, type RpaJobHandler, type RpaJobOptions } from './job.js';
 export { BasePage, type PageOptions } from './page.js';
 export { ScreenshotManager, type ScreenshotOptions } from './screenshot.js';
-export { sendCallback, type CallbackOptions } from './callback.js';
+export {
+  sendCallback,
+  buildCallbackResult,
+  type CallbackOptions,
+  type CallbackResult,
+  type ReservationResult,
+  type AvailableSlot,
+  type CallbackError,
+} from './callback.js';
 export { createRpaLogger, type RpaLogger } from './logger.js';
 export { BrowserManager, type BrowserOptions } from './browser.js';
 export {
@@ -34,3 +42,14 @@ export {
   hasCredentials,
   type RpaCredentials,
 } from './credentials.js';
+export {
+  createSyncCycleHandler,
+  addHealthCheck,
+  setupRpaServer,
+  type ReservationRequest,
+  type SyncCycleRequest,
+  type RpaJobData,
+  type SyncCycleResponse,
+  type ErrorResponse,
+  type RpaServerOptions,
+} from './server.js';

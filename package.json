@@ -1,6 +1,6 @@
 {
   "name": "@smartcall/rpa-sdk",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "SmartCall RPA SDK - Redis/BullMQ/Playwright utilities for RPA API developers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,18 +41,21 @@
   },
   "homepage": "https://github.com/milestone-corp/smartcall-rpa-sdk#readme",
   "dependencies": {
-    "bullmq": "^5.65.1",
-    "ioredis": "^5.8.2"
+    "bullmq": ">=5.0.0",
+    "ioredis": ">=5.0.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
-    "playwright": "^1.49.1",
+    "express": "^5.2.1",
+    "playwright": "^1.57.0",
     "typescript": "^5.6.3"
   },
   "peerDependencies": {
     "bullmq": ">=5.0.0",
     "ioredis": ">=5.0.0",
-    "playwright": ">=1.40.0"
+    "playwright": ">=1.40.0",
+    "express": ">=4.0.0"
   },
   "peerDependenciesMeta": {
     "bullmq": {
@@ -62,6 +65,9 @@
       "optional": true
     },
     "playwright": {
+      "optional": true
+    },
+    "express": {
       "optional": true
     }
   },

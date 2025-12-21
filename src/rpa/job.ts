@@ -36,7 +36,10 @@ export interface RpaJobContext<T = unknown> {
   /** コールバック送信 */
   sendCallback: (result: CallbackResult) => Promise<void>;
   /** コールバック結果構築 */
-  buildResult: (data?: Partial<Omit<CallbackResult, 'job_id' | 'external_shop_id' | 'synced_at'>>) => CallbackResult;
+  buildResult: (
+    status: 'success' | 'partial_success' | 'failed',
+    data?: Partial<Omit<CallbackResult, 'job_id' | 'external_shop_id' | 'status'>>
+  ) => CallbackResult;
 }
 
 /**
@@ -140,7 +143,8 @@ export function createRpaJob<T = unknown, R = void>(
               logger.warn('No callback URL provided, skipping callback');
             }
           },
-          buildResult: (partialData) => buildCallbackResult(jobId, externalShopId, partialData),
+          buildResult: (status, partialData) =>
+            buildCallbackResult(jobId, externalShopId, status, partialData),
         };
 
         // ハンドラー実行

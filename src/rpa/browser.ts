@@ -19,6 +19,10 @@ export interface BrowserOptions {
   storageStatePath?: string;
   /** スローモーション（デバッグ用、ms） */
   slowMo?: number;
+  /** Chromiumの実行ファイルパス（Docker環境用） */
+  executablePath?: string;
+  /** 追加の起動引数 */
+  args?: string[];
 }
 
 export interface BrowserSession {
@@ -55,6 +59,8 @@ export class BrowserManager {
     this.browser = await chromium.launch({
       headless: this.options.headless,
       slowMo: this.options.slowMo,
+      executablePath: this.options.executablePath,
+      args: this.options.args,
     });
 
     const contextOptions: Parameters<Browser['newContext']>[0] = {

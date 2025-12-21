@@ -1,0 +1,22 @@
+# SmartCall RPA SDK - テスト用Dockerfile
+# Playwright公式イメージをベースに使用
+
+FROM mcr.microsoft.com/playwright:v1.57.0-noble
+
+WORKDIR /app
+
+# Dockerイメージ内のPlaywrightを使用するため、npm installでのダウンロードをスキップ
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+# 依存関係のインストール
+COPY package*.json ./
+RUN npm ci
+
+# ソースコードをコピー
+COPY . .
+
+# ビルド
+RUN npm run build
+
+# テスト実行用のデフォルトコマンド
+CMD ["node", "test-worker.js"]
