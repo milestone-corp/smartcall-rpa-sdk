@@ -244,9 +244,11 @@ docker compose -f docker/docker-compose.test.yml run --rm test node your-test.js
 
 | ファイル | 用途 |
 |----------|------|
-| `docker/Dockerfile.test` | テスト用イメージ（Playwright 1.57.0） |
-| `docker/Dockerfile.rpa` | 本番RPA用イメージ |
-| `docker/docker-compose.test.yml` | テスト実行用Compose |
+| `docker/Dockerfile.test` | SDK開発用テストイメージ |
+| `docker/Dockerfile.rpa` | RPA APIプロジェクト用テンプレート |
+| `docker/docker-compose.test.yml` | SDK開発用テスト実行Compose |
+
+> **Important**: `docker/Dockerfile.rpa` はテンプレートです。あなたのRPA APIプロジェクト（例：rpa-beautymerit）のルートに `Dockerfile` としてコピーして使用してください。開発者ポータルからのデプロイでは、プロジェクトルートの `Dockerfile` が使用されます。
 
 ### 環境変数
 
