@@ -17,10 +17,9 @@ SmartCall RPA API開発者向けのRedis/BullMQ/Playwrightユーティリティ�
 
 ```bash
 npm install github:milestone-corp/smartcall-rpa-sdk
-
-# RPA機能を使う場合はplaywrightも必要
-npm install playwright
 ```
+
+> **Note**: RPA機能を使う場合、プロジェクトに`playwright`が必要です。通常、RPA APIプロジェクトのテンプレートには含まれています。
 
 ## 動作モード
 
