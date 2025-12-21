@@ -27,3 +27,10 @@ export { ScreenshotManager, type ScreenshotOptions } from './screenshot.js';
 export { sendCallback, type CallbackOptions } from './callback.js';
 export { createRpaLogger, type RpaLogger } from './logger.js';
 export { BrowserManager, type BrowserOptions } from './browser.js';
+export {
+  getCredentials,
+  getOptionalCredentials,
+  getCustomCredential,
+  hasCredentials,
+  type RpaCredentials,
+} from './credentials.js';
