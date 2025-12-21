@@ -41,14 +41,15 @@ your-rpa-api/
 ├── package-lock.json
 ├── tsconfig.json       # TypeScript使用時
 ├── src/
+│   ├── index.ts        # エントリポイント
 │   ├── server.ts       # Expressサーバー（/sync-cycle, /health）
 │   ├── worker.ts       # BullMQ Worker
-│   ├── pages/          # ページオブジェクト
-│   │   ├── LoginPage.ts
-│   │   └── SchedulePage.ts
-│   └── types/          # 型定義
+│   └── pages/          # ページオブジェクト
+│       └── LoginPage.ts
 └── .env.example        # 環境変数サンプル（秘密情報は含めない）
 ```
+
+> **テンプレート**: [`examples/template/`](examples/template/) をコピーして新規プロジェクトを開始できます。
 
 ### Dockerfile要件
 
