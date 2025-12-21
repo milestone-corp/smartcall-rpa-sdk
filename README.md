@@ -21,6 +21,76 @@ npm install github:milestone-corp/smartcall-rpa-sdk
 
 > **Note**: RPA機能を使う場合、プロジェクトに`playwright`が必要です。通常、RPA APIプロジェクトのテンプレートには含まれています。
 
+## プロジェクト構成ルール
+
+開発者ポータルからデプロイするには、GitHubリポジトリが以下の構成に従う必要があります。
+
+### 必須ファイル
+
+| ファイル | 説明 |
+|----------|------|
+| `Dockerfile` | **プロジェクトルート直下に必須**。デプロイシステムはこのファイルを使用してイメージをビルドします。 |
+| `package.json` | Node.js依存関係の定義 |
+
+### 推奨ディレクトリ構成
+
+```
+your-rpa-api/
+├── Dockerfile          # ← 必須：ルート直下に配置
+├── package.json
+├── package-lock.json
+├── tsconfig.json       # TypeScript使用時
+├── src/
+│   ├── server.ts       # Expressサーバー（/sync-cycle, /health）
+│   ├── worker.ts       # BullMQ Worker
+│   ├── pages/          # ページオブジェクト
+│   │   ├── LoginPage.ts
+│   │   └── SchedulePage.ts
+│   └── types/          # 型定義
+└── .env.example        # 環境変数サンプル（秘密情報は含めない）
+```
+
+### Dockerfile要件
+
+Dockerfileは以下の要件を満たす必要があります：
+
+1. **ベースイメージ**: Playwright公式イメージを使用
+   ```dockerfile
+   FROM mcr.microsoft.com/playwright:v1.57.0-noble
+   ```
+
+2. **ポート**: 3000番ポートを公開
+   ```dockerfile
+   EXPOSE 3000
+   ```
+
+3. **ヘルスチェック**: `/health` エンドポイントへのヘルスチェック（推奨）
+   ```dockerfile
+   HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+     CMD curl -f http://localhost:3000/health || exit 1
+   ```
+
+4. **起動コマンド**: `npm run start` または `npm run dev`
+   ```dockerfile
+   CMD ["npm", "run", "start"]
+   ```
+
+> **テンプレート**: `docker/Dockerfile.rpa` をプロジェクトルートに `Dockerfile` としてコピーして使用してください。
+
+### 環境変数
+
+デプロイ時に以下の環境変数が自動設定されます（コード内でハードコードしないでください）：
+
+| 変数名 | 説明 |
+|--------|------|
+| `API_CONFIG_ID` | API設定ID（開発者ポータルで割り当て） |
+| `ENVIRONMENT` | 環境（staging / production） |
+| `REDIS_HOST` | Redisホスト |
+| `REDIS_PORT` | Redisポート |
+| `REDIS_DB` | Redis DB番号 |
+| `LOGIN_KEY` | ログインID（開発者ポータルで設定） |
+| `LOGIN_PASSWORD` | ログインパスワード（開発者ポータルで設定） |
+
 ## 動作モード
 
 環境変数 `SMARTCALL_MODE` で制御:
@@ -245,10 +315,8 @@ docker compose -f docker/docker-compose.test.yml run --rm test node your-test.js
 | ファイル | 用途 |
 |----------|------|
 | `docker/Dockerfile.test` | SDK開発用テストイメージ |
-| `docker/Dockerfile.rpa` | RPA APIプロジェクト用テンプレート |
+| `docker/Dockerfile.rpa` | RPA APIプロジェクト用テンプレート（[プロジェクト構成ルール](#プロジェクト構成ルール)参照） |
 | `docker/docker-compose.test.yml` | SDK開発用テスト実行Compose |
-
-> **Important**: `docker/Dockerfile.rpa` はテンプレートです。あなたのRPA APIプロジェクト（例：rpa-beautymerit）のルートに `Dockerfile` としてコピーして使用してください。開発者ポータルからのデプロイでは、プロジェクトルートの `Dockerfile` が使用されます。
 
 ### 環境変数
 
