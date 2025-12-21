@@ -146,3 +146,6 @@ export type {
   JobProcessor,
   Job,
 } from './types.js';
+
+// RPA Helpers (optional, import from '@smartcall/rpa-sdk/rpa')
+export * from './rpa/index.js';

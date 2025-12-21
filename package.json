@@ -1,10 +1,20 @@
 {
   "name": "@smartcall/rpa-sdk",
-  "version": "1.0.0",
-  "description": "SmartCall RPA SDK - Redis/BullMQ utilities for RPA API developers",
+  "version": "1.1.0",
+  "description": "SmartCall RPA SDK - Redis/BullMQ/Playwright utilities for RPA API developers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./rpa": {
+      "import": "./dist/rpa/index.js",
+      "types": "./dist/rpa/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -16,7 +26,9 @@
     "rpa",
     "redis",
     "bullmq",
-    "queue"
+    "playwright",
+    "queue",
+    "automation"
   ],
   "author": "SmartCall Team",
   "license": "MIT",
@@ -34,17 +46,22 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "playwright": "^1.49.1",
     "typescript": "^5.6.3"
   },
   "peerDependencies": {
     "bullmq": ">=5.0.0",
-    "ioredis": ">=5.0.0"
+    "ioredis": ">=5.0.0",
+    "playwright": ">=1.40.0"
   },
   "peerDependenciesMeta": {
     "bullmq": {
       "optional": true
     },
     "ioredis": {
+      "optional": true
+    },
+    "playwright": {
       "optional": true
     }
   },
