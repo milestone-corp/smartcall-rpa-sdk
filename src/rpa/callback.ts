@@ -14,21 +14,29 @@ export interface CallbackOptions {
 }
 
 /**
+ * 予約操作結果の詳細
+ */
+export interface ReservationResultDetail {
+  /** 結果: success / failed */
+  status: 'success' | 'failed';
+  /** 予約システム側の予約ID（成功時） */
+  external_reservation_id?: string;
+  /** エラーコード（失敗時） */
+  error_code?: string | null;
+  /** エラーメッセージ（失敗時） */
+  error_message?: string | null;
+}
+
+/**
  * 予約操作結果の型（API仕様準拠）
  */
 export interface ReservationResult {
   /** SmartCall側の予約ID */
   reservation_id: string;
-  /** 操作種別: create / cancel */
-  operation: 'create' | 'cancel';
-  /** 結果: success / conflict / failed */
-  status: 'success' | 'conflict' | 'failed';
-  /** 予約システム側の予約ID（成功時） */
-  external_reservation_id?: string;
-  /** エラーコード（失敗時） */
-  error_code?: string;
-  /** エラーメッセージ（失敗時） */
-  error_message?: string;
+  /** 操作種別: create / update / cancel */
+  operation: 'create' | 'update' | 'cancel';
+  /** 結果オブジェクト */
+  result: ReservationResultDetail;
 }
 
 /**
@@ -65,12 +73,14 @@ export interface CallbackResult {
   job_id: string;
   /** 店舗ID */
   external_shop_id: string;
-  /** ジョブ全体のステータス: success / partial_success / failed */
-  status: 'success' | 'partial_success' | 'failed';
+  /** 同期完了日時（ISO 8601形式） */
+  synced_at: string;
   /** 予約操作結果リスト */
-  reservation_results?: ReservationResult[];
+  reservation_results: ReservationResult[];
+  /** 予約一覧（現在は空配列を返す） */
+  reservations: unknown[];
   /** 空き枠情報 */
-  available_slots?: AvailableSlot[];
+  available_slots: AvailableSlot[];
   /** エラー情報 */
   error?: CallbackError;
   /** その他のカスタムフィールド */
@@ -164,20 +174,21 @@ export async function sendCallback(
  *
  * @param jobId ジョブID
  * @param externalShopId 店舗ID
- * @param status ジョブ全体のステータス
+ * @param status ジョブ全体のステータス（後方互換性のため残すが、CallbackResultには含まれない）
  * @param data 追加データ
  */
 export function buildCallbackResult(
   jobId: string,
   externalShopId: string,
-  status: 'success' | 'partial_success' | 'failed',
-  data: Partial<Omit<CallbackResult, 'job_id' | 'external_shop_id' | 'status'>> = {}
+  _status: 'success' | 'partial_success' | 'failed',
+  data: Partial<Omit<CallbackResult, 'job_id' | 'external_shop_id' | 'synced_at'>> = {}
 ): CallbackResult {
   return {
     job_id: jobId,
     external_shop_id: externalShopId,
-    status,
+    synced_at: new Date().toISOString(),
     reservation_results: [],
+    reservations: [],
     available_slots: [],
     ...data,
   };

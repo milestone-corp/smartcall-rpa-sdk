@@ -9,29 +9,87 @@ import type { Request, Response, NextFunction, RequestHandler, Application } fro
 import type { Queue } from 'bullmq';
 
 /**
+ * 予約枠情報
+ */
+export interface SlotInfo {
+  /** 予約日（YYYY-MM-DD） */
+  date: string;
+  /** 開始時刻（HH:MM） */
+  start_at: string;
+  /** 終了時刻（HH:MM） */
+  end_at: string;
+  /** 所要時間（分） */
+  duration_min: number;
+}
+
+/**
+ * メニュー情報
+ */
+export interface MenuInfo {
+  /** SmartCall側のメニューID */
+  menu_id: string;
+  /** 予約システム側のメニューID */
+  external_menu_id: string;
+  /** メニュー名 */
+  menu_name: string;
+}
+
+/**
+ * スタッフ情報
+ */
+export interface StaffInfo {
+  /** SmartCall側のスタッフID */
+  staff_id: string;
+  /** 予約システム側のスタッフID */
+  external_staff_id: string;
+  /** スタッフ名 */
+  resource_name: string;
+  /** 指名区分: specific（指名）/ any（指名なし） */
+  preference: 'specific' | 'any';
+}
+
+/**
+ * 顧客情報
+ */
+export interface CustomerInfo {
+  /** 顧客名 */
+  name: string;
+  /** 顧客電話番号 */
+  phone: string;
+  /** 備考 */
+  notes?: string;
+}
+
+/**
  * 予約データの型（API仕様準拠）
  */
 export interface ReservationRequest {
   /** SmartCall側の予約ID */
   reservation_id: string;
-  /** 操作種別: create / cancel */
-  operation: 'create' | 'cancel';
-  /** 予約日（YYYY-MM-DD） */
-  date: string;
-  /** 予約時刻（HH:MM） */
-  time: string;
-  /** 所要時間（分）デフォルト: 30 */
-  duration_min?: number;
-  /** 顧客名 */
-  customer_name: string;
-  /** 顧客電話番号 */
-  customer_phone: string;
-  /** 人数 デフォルト: 1 */
-  party_size?: number;
-  /** メニュー名 */
-  menu_name?: string;
-  /** 備考 */
-  notes?: string;
+  /** 操作種別: create / update / cancel */
+  operation: 'create' | 'update' | 'cancel';
+  /** 予約システム側の予約ID（cancel時必須） */
+  external_reservation_id?: string;
+  /** 予約枠情報 */
+  slot: SlotInfo;
+  /** メニュー情報 */
+  menu: MenuInfo;
+  /** スタッフ情報 */
+  staff: StaffInfo;
+  /** 顧客情報 */
+  customer: CustomerInfo;
+  /** キャンセル理由（cancel時） */
+  cancel_reason?: string;
+}
+
+/**
+ * 同期期間設定
+ */
+export interface ReservationSync {
+  /** 同期開始日（YYYY-MM-DD） */
+  date_from: string;
+  /** 同期終了日（YYYY-MM-DD） */
+  date_to: string;
 }
 
 /**
@@ -44,12 +102,10 @@ export interface SyncCycleRequest {
   external_shop_id: string;
   /** 結果通知先URL */
   callback_url: string;
-  /** 同期開始日（YYYY-MM-DD）デフォルト: 当日 */
-  date_from?: string;
-  /** 同期終了日（YYYY-MM-DD）デフォルト: 7日後 */
-  date_to?: string;
+  /** 同期期間設定 */
+  reservation_sync: ReservationSync;
   /** 予約操作リスト */
-  reservations?: ReservationRequest[];
+  reservations: ReservationRequest[];
   /** その他のカスタムフィールド */
   [key: string]: unknown;
 }

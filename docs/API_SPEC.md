@@ -50,19 +50,58 @@ Content-Type: application/json
 | `date_to` | string | No | 同期終了日（YYYY-MM-DD）デフォルト: 7日後 |
 | `reservations` | array | No | 予約操作リスト |
 
+#### reservation_syncオブジェクト
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `date_from` | string | Yes | 同期開始日（YYYY-MM-DD） |
+| `date_to` | string | Yes | 同期終了日（YYYY-MM-DD） |
+
 #### reservations配列の要素
 
 | パラメータ | 型 | 必須 | 説明 |
 |-----------|------|------|------|
 | `reservation_id` | string | Yes | SmartCall側の予約ID |
-| `operation` | string | Yes | 操作種別: `create` / `cancel` |
+| `operation` | string | Yes | 操作種別: `create` / `update` / `cancel` |
+| `external_reservation_id` | string | No | 予約システム側の予約ID（cancel時必須） |
+| `slot` | object | Yes | 予約枠情報 |
+| `menu` | object | Yes | メニュー情報 |
+| `staff` | object | Yes | スタッフ情報 |
+| `customer` | object | Yes | 顧客情報 |
+| `cancel_reason` | string | No | キャンセル理由（cancel時） |
+
+#### slot オブジェクト
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|------|------|------|
 | `date` | string | Yes | 予約日（YYYY-MM-DD） |
-| `time` | string | Yes | 予約時刻（HH:MM） |
-| `duration_min` | number | No | 所要時間（分）デフォルト: 30 |
-| `customer_name` | string | Yes | 顧客名 |
-| `customer_phone` | string | Yes | 顧客電話番号 |
-| `party_size` | number | No | 人数 デフォルト: 1 |
-| `menu_name` | string | No | メニュー名 |
+| `start_at` | string | Yes | 開始時刻（HH:MM） |
+| `end_at` | string | Yes | 終了時刻（HH:MM） |
+| `duration_min` | number | Yes | 所要時間（分） |
+
+#### menu オブジェクト
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `menu_id` | string | Yes | SmartCall側のメニューID |
+| `external_menu_id` | string | Yes | 予約システム側のメニューID |
+| `menu_name` | string | Yes | メニュー名 |
+
+#### staff オブジェクト
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `staff_id` | string | Yes | SmartCall側のスタッフID |
+| `external_staff_id` | string | Yes | 予約システム側のスタッフID |
+| `resource_name` | string | Yes | スタッフ名 |
+| `preference` | string | Yes | 指名区分: `specific`（指名）/ `any`（指名なし） |
+
+#### customer オブジェクト
+
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|------|------|------|
+| `name` | string | Yes | 顧客名 |
+| `phone` | string | Yes | 顧客電話番号 |
 | `notes` | string | No | 備考 |
 
 #### リクエスト例
@@ -72,20 +111,36 @@ Content-Type: application/json
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "external_shop_id": "73510325",
   "callback_url": "http://192.168.20.50:3003/internal/beautymerit/sync-cycle-callback",
-  "date_from": "2025-12-18",
-  "date_to": "2025-12-25",
+  "reservation_sync": {
+    "date_from": "2025-12-18",
+    "date_to": "2025-12-25"
+  },
   "reservations": [
     {
       "reservation_id": "sc_res_1734500000000_abc123",
       "operation": "create",
-      "date": "2025-12-20",
-      "time": "14:00",
-      "duration_min": 60,
-      "customer_name": "山田 太郎",
-      "customer_phone": "090-1234-5678",
-      "party_size": 1,
-      "menu_name": "カット",
-      "notes": "初めてのご来店"
+      "slot": {
+        "date": "2025-12-20",
+        "start_at": "14:00",
+        "end_at": "15:00",
+        "duration_min": 60
+      },
+      "menu": {
+        "menu_id": "menu_001",
+        "external_menu_id": "EXT-MENU-001",
+        "menu_name": "カット"
+      },
+      "staff": {
+        "staff_id": "staff_001",
+        "external_staff_id": "EXT-STAFF-001",
+        "resource_name": "スタッフA",
+        "preference": "specific"
+      },
+      "customer": {
+        "name": "山田 太郎",
+        "phone": "090-1234-5678",
+        "notes": "初めてのご来店"
+      }
     }
   ]
 }
@@ -143,9 +198,16 @@ Content-Type: application/json
 | パラメータ | 型 | 説明 |
 |-----------|------|------|
 | `reservation_id` | string | SmartCall側の予約ID |
-| `operation` | string | 操作種別: `create` / `cancel` |
-| `status` | string | 結果: `success` / `conflict` / `failed` |
+| `operation` | string | 操作種別: `create` / `update` / `cancel` |
+| `result` | object | 結果オブジェクト |
+
+#### result オブジェクト
+
+| パラメータ | 型 | 説明 |
+|-----------|------|------|
+| `status` | string | 結果: `success` / `failed` |
 | `external_reservation_id` | string | 予約システム側の予約ID（成功時） |
+| `error_code` | string | エラーコード（失敗時） |
 | `error_message` | string | エラーメッセージ（失敗時） |
 
 #### available_slots配列の要素
@@ -164,21 +226,26 @@ Content-Type: application/json
 {
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "external_shop_id": "73510325",
-  "status": "success",
+  "synced_at": "2025-12-18T10:30:00.000Z",
   "reservation_results": [
     {
       "reservation_id": "sc_res_1734500000000_abc123",
       "operation": "create",
-      "status": "success",
-      "external_reservation_id": "BM-2025121800001"
+      "result": {
+        "status": "success",
+        "external_reservation_id": "BM-2025121800001",
+        "error_code": null,
+        "error_message": null
+      }
     }
   ],
+  "reservations": [],
   "available_slots": [
     {
       "date": "2025-12-20",
       "time": "09:00",
       "duration_min": 30,
-      "stock": 2
+      "stock": 1
     },
     {
       "date": "2025-12-20",
@@ -254,20 +321,21 @@ Content-Type: application/json
 {
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "external_shop_id": "73510325",
-  "status": "failed",
+  "synced_at": "2025-12-18T10:30:00.000Z",
   "reservation_results": [
     {
       "reservation_id": "sc_res_1734500000000_abc123",
       "operation": "create",
-      "status": "failed",
-      "error_code": "SLOT_NOT_AVAILABLE",
-      "error_message": "指定された時間帯に空きがありません"
+      "result": {
+        "status": "failed",
+        "external_reservation_id": "",
+        "error_code": "SLOT_NOT_AVAILABLE",
+        "error_message": "指定された時間帯に空きがありません"
+      }
     }
   ],
-  "error": {
-    "code": "PARTIAL_FAILURE",
-    "message": "一部の予約処理に失敗しました"
-  }
+  "reservations": [],
+  "available_slots": []
 }
 ```
 
