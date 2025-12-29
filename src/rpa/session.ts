@@ -168,18 +168,20 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
     timeoutMs: number = 600000
   ): Promise<T> {
     const release = await this.mutex.acquire();
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     try {
       const page = await this.acquirePage();
       try {
         // タイムアウト付きで実行
         const result = await Promise.race([
           fn(page),
-          new Promise<never>((_, reject) =>
-            setTimeout(
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(
               () => reject(new Error(`Page operation timed out after ${timeoutMs}ms`)),
               timeoutMs
-            )
-          ),
+            );
+          }),
         ]);
         return result;
       } catch (error) {
@@ -190,6 +192,8 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
         }
         throw error;
       } finally {
+        // タイマーをクリア（メモリリーク防止）
+        if (timeoutId) clearTimeout(timeoutId);
         this.releasePage();
       }
     } finally {
@@ -200,8 +204,15 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
   /**
    * ページを取得（処理用）
    * busyステートに移行し、処理完了後にreleasePageを呼び出す必要がある
+   * error状態の場合は自動リカバリーを試行する
    */
   async acquirePage(): Promise<Page> {
+    // error状態の場合は自動リカバリーを試行
+    if (this.state === 'error') {
+      console.warn('[BaseBrowserSessionManager] Attempting auto-recovery from error state...');
+      await this.recoverInternal();
+    }
+
     if (this.state !== 'ready') {
       throw new Error(`Cannot acquire page in state: ${this.state}`);
     }
