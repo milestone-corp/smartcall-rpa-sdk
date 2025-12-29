@@ -1,109 +1,84 @@
 /**
  * SmartCall RPA SDK Type Definitions
+ * v2.0 - Real-time RPA patterns (no Redis/BullMQ)
  */
-
-import type { QueueOptions, WorkerOptions, Job } from 'bullmq';
 
 /**
- * SDK動作モード
- * - production: 本番モード（BullMQ + Redis）
- * - stub: スタブモード（メモリ内キュー、Redisなしで動作）
+ * 予約リクエスト情報
  */
-export type SDKMode = 'production' | 'stub';
-
-/**
- * Redis接続オプション
- */
-export interface SmartCallRedisOptions {
-  /** Redis DB番号をオーバーライド */
-  db?: number;
-  /** Redisホスト */
-  host?: string;
-  /** Redisポート */
-  port?: number;
+export interface ReservationRequest {
+  /** 予約ID */
+  reservationId: string;
+  /** 顧客情報 */
+  customer: CustomerInfo;
+  /** 予約枠情報 */
+  slot: SlotInfo;
+  /** メニュー情報 */
+  menu?: MenuInfo;
+  /** スタッフ情報 */
+  staff?: StaffInfo;
+  /** 備考 */
+  notes?: string;
 }
 
 /**
- * キュー作成オプション
+ * 顧客情報
  */
-export interface SmartCallQueueOptions extends Partial<QueueOptions> {
-  /** デフォルトジョブオプション */
-  defaultJobOptions?: {
-    removeOnComplete?: number | boolean;
-    removeOnFail?: number | boolean;
-    attempts?: number;
-    backoff?: {
-      type: 'fixed' | 'exponential';
-      delay: number;
-    };
-  };
+export interface CustomerInfo {
+  /** 顧客ID */
+  customerId?: string;
+  /** 名前（姓） */
+  lastName: string;
+  /** 名前（名） */
+  firstName: string;
+  /** 電話番号 */
+  phone: string;
+  /** メールアドレス */
+  email?: string;
 }
 
 /**
- * Worker作成オプション
+ * 予約枠情報
  */
-export interface SmartCallWorkerOptions extends Partial<WorkerOptions> {
-  /** 並列処理数 */
-  concurrency?: number;
-  /** レート制限 */
-  limiter?: {
-    max: number;
-    duration: number;
-  };
+export interface SlotInfo {
+  /** 日付（YYYY-MM-DD形式） */
+  date: string;
+  /** 開始時刻（HH:MM形式） */
+  startTime: string;
+  /** 終了時刻（HH:MM形式） */
+  endTime?: string;
+  /** 所要時間（分） */
+  durationMinutes?: number;
 }
 
 /**
- * ジョブプロセッサー関数の型
+ * メニュー情報
  */
-export type JobProcessor<T = unknown, R = unknown> = (job: Job<T>) => Promise<R>;
+export interface MenuInfo {
+  /** メニューID */
+  menuId?: string;
+  /** メニュー名 */
+  menuName: string;
+  /** 価格 */
+  price?: number;
+}
+
+/**
+ * スタッフ情報
+ */
+export interface StaffInfo {
+  /** スタッフID */
+  staffId?: string;
+  /** スタッフ名 */
+  staffName: string;
+}
 
 /**
  * SDK設定情報
  */
 export interface SmartCallConfig {
-  /** SDK動作モード */
-  mode: SDKMode;
   /** API設定ID */
   apiConfigId: number;
   /** 環境（staging/production） */
   environment: string;
-  /** Redis接続情報 */
-  redis: {
-    host: string;
-    port: number;
-    db: number;
-  };
 }
-
-/**
- * スタブ用のジョブインターフェース
- */
-export interface StubJob<T = unknown> {
-  id: string;
-  name: string;
-  data: T;
-  opts: Record<string, unknown>;
-  progress: number | object;
-  updateProgress(progress: number | object): Promise<void>;
-}
-
-/**
- * スタブ用のキューインターフェース
- */
-export interface StubQueue<T = unknown> {
-  name: string;
-  add(name: string, data: T, opts?: Record<string, unknown>): Promise<StubJob<T>>;
-  close(): Promise<void>;
-}
-
-/**
- * スタブ用のWorkerインターフェース
- */
-export interface StubWorker<T = unknown> {
-  name: string;
-  on(event: string, callback: (...args: unknown[]) => void): void;
-  close(): Promise<void>;
-}
-
-// Re-export Job type
-export type { Job } from 'bullmq';
