@@ -8,7 +8,9 @@
  */
 export interface ReservationRequest {
   /** 予約ID */
-  reservationId: string;
+  reservation_id: string;
+  /** 操作種別 */
+  operation: 'create' | 'update' | 'cancel';
   /** 顧客情報 */
   customer: CustomerInfo;
   /** 予約枠情報 */
@@ -26,15 +28,15 @@ export interface ReservationRequest {
  */
 export interface CustomerInfo {
   /** 顧客ID */
-  customerId?: string;
-  /** 名前（姓） */
-  lastName: string;
-  /** 名前（名） */
-  firstName: string;
+  customer_id?: string;
+  /** 名前（フルネーム） */
+  name: string;
   /** 電話番号 */
   phone: string;
   /** メールアドレス */
   email?: string;
+  /** 備考 */
+  notes?: string;
 }
 
 /**
@@ -44,11 +46,11 @@ export interface SlotInfo {
   /** 日付（YYYY-MM-DD形式） */
   date: string;
   /** 開始時刻（HH:MM形式） */
-  startTime: string;
+  start_at: string;
   /** 終了時刻（HH:MM形式） */
-  endTime?: string;
+  end_at?: string;
   /** 所要時間（分） */
-  durationMinutes?: number;
+  duration_min?: number;
 }
 
 /**
@@ -56,9 +58,11 @@ export interface SlotInfo {
  */
 export interface MenuInfo {
   /** メニューID */
-  menuId?: string;
+  menu_id?: string;
+  /** 外部メニューID */
+  external_menu_id?: string;
   /** メニュー名 */
-  menuName: string;
+  menu_name: string;
   /** 価格 */
   price?: number;
 }
@@ -68,9 +72,11 @@ export interface MenuInfo {
  */
 export interface StaffInfo {
   /** スタッフID */
-  staffId?: string;
+  staff_id?: string;
+  /** 外部スタッフID */
+  external_staff_id?: string;
   /** スタッフ名 */
-  staffName: string;
+  staff_name: string;
 }
 
 /**
