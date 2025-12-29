@@ -161,11 +161,11 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
    * 他のリクエストはMutexが解放されるまで待機する
    *
    * @param fn ページを使用する処理
-   * @param timeoutMs タイムアウト時間（デフォルト: 10分）
+   * @param timeoutMs タイムアウト時間（デフォルト: 60秒）
    */
   async withPage<T>(
     fn: (page: Page) => Promise<T>,
-    timeoutMs: number = 600000
+    timeoutMs: number = 60000
   ): Promise<T> {
     const release = await this.mutex.acquire();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
