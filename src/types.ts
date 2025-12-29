@@ -76,7 +76,11 @@ export interface StaffInfo {
   /** 外部スタッフID */
   external_staff_id?: string;
   /** スタッフ名 */
-  staff_name: string;
+  staff_name?: string;
+  /** リソース名（担当者など） */
+  resource_name?: string;
+  /** 優先度 */
+  preference?: 'any' | 'specific';
 }
 
 /**
