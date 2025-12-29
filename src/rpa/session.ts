@@ -377,6 +377,24 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
   }
 
   /**
+   * 強制クローズ（close()が失敗した場合のフォールバック）
+   * ゾンビプロセス防止用
+   */
+  async forceClose(): Promise<void> {
+    console.warn('[BaseBrowserSessionManager] Force closing session...');
+
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
+
+    // closeBrowser()は既にエラーを無視する実装になっている
+    await this.closeBrowser();
+    this.setState('closed');
+    console.warn('[BaseBrowserSessionManager] Session force closed');
+  }
+
+  /**
    * セッションを再起動
    */
   async restart(): Promise<void> {
