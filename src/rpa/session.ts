@@ -71,6 +71,8 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
   protected mutex = new Mutex();
   protected keepAliveTimer: ReturnType<typeof setInterval> | null = null;
   protected config: Required<BaseSessionConfig>;
+  /** セッションがクローズ中かどうか（Keep-alive競合防止用） */
+  protected isClosing: boolean = false;
 
   constructor(config: BaseSessionConfig = {}) {
     super();
@@ -265,14 +267,15 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
    * セッションをリフレッシュ（Mutex付き）
    */
   protected async refreshSession(): Promise<void> {
-    // busy状態やrecovering状態の場合はスキップ
+    // busy状態やrecovering状態、closed状態の場合はスキップ
     if (this.state !== 'ready' || !this.page) return;
 
     // Mutexを取得してからリフレッシュ（リクエスト処理との競合防止）
     const release = await this.mutex.acquire();
     try {
       // 再度状態チェック（Mutex取得中に変わった可能性）
-      if (this.state !== 'ready' || !this.page) return;
+      // closedやclosingの場合はリフレッシュをスキップ
+      if (this.state !== 'ready' || !this.page || this.isClosing) return;
 
       console.log('[BaseBrowserSessionManager] Keep-alive: refreshing session...');
 
@@ -292,6 +295,11 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
 
       this.lastActivityTime = new Date();
     } catch (error) {
+      // セッションクローズ中のエラーは無視（正常なシャットダウン）
+      if (this.isClosing) {
+        console.log('[BaseBrowserSessionManager] Keep-alive aborted: session is closing');
+        return;
+      }
       console.error('[BaseBrowserSessionManager] Keep-alive failed:', error);
       await this.recoverInternal();
     } finally {
@@ -377,13 +385,24 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
   async close(): Promise<void> {
     console.log('[BaseBrowserSessionManager] Closing session...');
 
+    // クローズ中フラグを立てる（Keep-aliveとの競合防止）
+    this.isClosing = true;
+
+    // Keep-aliveタイマーを停止
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
     }
 
-    await this.closeBrowser();
-    this.setState('closed');
+    // Mutexを取得してから終了（実行中のKeep-aliveやリクエストの完了を待つ）
+    const release = await this.mutex.acquire();
+    try {
+      await this.closeBrowser();
+      this.setState('closed');
+    } finally {
+      this.isClosing = false;
+      release();
+    }
     console.log('[BaseBrowserSessionManager] Session closed');
   }
 
@@ -394,6 +413,9 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
   async forceClose(): Promise<void> {
     console.warn('[BaseBrowserSessionManager] Force closing session...');
 
+    // クローズ中フラグを立てる
+    this.isClosing = true;
+
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
@@ -402,6 +424,7 @@ export abstract class BaseBrowserSessionManager extends EventEmitter {
     // closeBrowser()は既にエラーを無視する実装になっている
     await this.closeBrowser();
     this.setState('closed');
+    this.isClosing = false;
     console.warn('[BaseBrowserSessionManager] Session force closed');
   }
 
